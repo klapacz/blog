@@ -1,0 +1,31 @@
+// Folder-specific settings
+//
+// For a full list of overridable settings, and general information on folder-specific settings,
+// see the documentation: https://zed.dev/docs/configuring-zed#settings-files
+{
+  "languages": {
+    "JavaScript": {
+      "code_actions_on_format": {
+        "source.fixAll.eslint": true
+      },
+      "formatter": "prettier"
+    },
+    "TypeScript": {
+      "code_actions_on_format": {
+        "source.fixAll.eslint": true
+      },
+      "formatter": "prettier"
+    },
+    "TSX": {
+      "code_actions_on_format": {
+        "source.fixAll.eslint": true
+      },
+      "formatter": "prettier"
+    },
+    "Markdown": {
+      "formatter": "prettier",
+      "preferred_line_length": 80,
+      "wrap_guides": [80]
+    }
+  }
+}
