@@ -1,7 +1,29 @@
-body {
-  @apply text-slate-900;
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+:root {
+  --bg: var(--color-white);
+  --fg: var(--color-gray-900);
+  --muted-fg: var(--color-gray-500);
+  --border: oklch(0.922 0 0);
+
+  --content: var(--container-3xl);
 }
 
-.my-container {
-  @apply max-w-3xl mx-auto;
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-muted-fg: var(--muted-fg);
+  --color-border: var(--border);
+
+  --spacing-content: var(--content);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-bg text-fg;
+  }
 }

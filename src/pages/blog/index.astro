@@ -18,7 +18,7 @@ const posts = (await getCollection("blog")).sort(
   </head>
   <body>
     <Header />
-    <main class="my-container px-4">
+    <main class="mx-auto max-w-content px-4">
       <section>
         <ul>
           {
@@ -26,7 +26,7 @@ const posts = (await getCollection("blog")).sort(
               <li>
                 <a href={`/blog/${post.slug}/`} class="space-y-2">
                   <h4 class="text-lg font-medium">{post.data.title}</h4>
-                  <p class="text-slate-500">
+                  <p class="text-muted-fg">
                     <FormattedDate date={post.data.pubDate} />
                   </p>
                 </a>
