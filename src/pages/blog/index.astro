@@ -20,7 +20,7 @@ const posts = (await getCollection("blog")).sort(
     <Header />
     <main class="mx-auto max-w-content px-4">
       <section>
-        <ul>
+        <ul class="space-y-4">
           {
             posts.map((post) => (
               <li>
