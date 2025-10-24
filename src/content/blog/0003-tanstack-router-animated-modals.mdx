@@ -1,0 +1,164 @@
+---
+title: "Animating URL-Based Modals in Tanstack Router"
+description: "Using the View Transition API to animate modals that live in the URL"
+pubDate: "2025-10-25"
+---
+
+import { Blog0003Step1 } from "../../examples/0003/step-1";
+import { Blog0003Step2 } from "../../examples/0003/step-2";
+import { Blog0003Step3 } from "../../examples/0003/step-3";
+import { Blog0003Step4 } from "../../examples/0003/step-4";
+
+A few weeks ago, I started building ["Eaten"](https://github.com/klapacz/eaten) - a food tracking app. While working on it, I experimented with some cool new libraries like [electric](https://electric-sql.com/) and [@tanstack/db](https://tanstack.com/db/latest).
+
+I chose [Tanstack Router](https://tanstack.com/router/latest) for routing. One of my design principles was keeping state in the URL - things like table filters go in query params, and modals are accessible via pathname.
+
+I highly recommend reading [Search Params Are State](https://tanstack.com/blog/search-params-are-state) by Tanner Linsley.
+
+Quick note: I'm using Tailwind & React in this post, but this approach works with vanilla CSS and Tanstack Router's Solid version too.
+
+Here's where things get interesting: animating a modal that lives in the URL. Specifically, the exit animation becomes tricky.
+
+Let's look at some code:
+
+```tsx
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/",
+  component: function Index() {
+    return (
+      <div>
+        <Link to="/modal" className={buttonVariants()}>
+          Open Modal {/* (1) */}
+        </Link>
+        <Outlet /> {/* (2) */}
+      </div>
+    );
+  },
+});
+```
+
+We have an index route with a link to `/modal` styled as a button (1), and an `<Outlet/>` component (2) to render child routes. Let me show you what the modal route looks like.
+
+BTW, I'm using shadcn/ui here since it's popular, but I personally prefer [intentui](https://intentui.com/) built on [react-aria](https://react-spectrum.adobe.com/react-aria/index.html).
+
+```tsx
+const modalRoute = createRoute({
+  getParentRoute: () => indexRoute,
+  path: "/modal",
+  component: function Modal() {
+    const navigate = modalRoute.useNavigate();
+
+    return (
+      <Sheet
+        open={true} // 1
+        onOpenChange={() => navigate({ to: "/" })} // 2
+      >
+        <SheetContent>{/* ... */}</SheetContent>
+      </Sheet>
+    );
+  },
+});
+```
+
+Here's the modal route. It renders a [shadcn sheet](https://ui.shadcn.com/docs/components/sheet) component that's always open (1). When the open state changes (which only happens when closing), we navigate back to the index route (2).
+
+And it works! Well... kinda. Navigating to `/modal` looks great - the sheet beautifully slides in from the right. But when you close it by navigating back to `/`, it just... disappears. No animation.
+
+You can try it here:
+
+<Blog0003Step1 client:load />
+
+Why? To show an exit animation, the element needs to stay in the DOM. But when you navigate to `/`, Tanstack Router immediately unmounts the Sheet component.
+
+Normally, you'd use `AnimatePresence` from Framer Motion to keep the element in the DOM during animation. But setting that up with Tanstack Router is really hacky (see [this discussion](https://github.com/TanStack/router/discussions/823)), and I couldn't get it working smoothly.
+
+Luckily, there's another solution: the [View Transition API](https://developer.mozilla.org/en-US/docs/Web/API/View_Transition_API). From the docs:
+
+> The View Transition API provides a mechanism for easily creating animated transitions between different website views. This includes animating between DOM states in a single-page app (SPA), and animating the navigation between documents in a multi-page app (MPA).
+
+Perfect! Even better, it's [natively supported](https://tanstack.com/router/latest/docs/framework/react/api/router/NavigateOptionsType) by Tanstack Router.
+
+One thing to note: about [88% of users have browsers that support](https://caniuse.com/?search=view+transition) the View Transition API. Older browsers just won't get the animation, but that's a tradeoff I'm happy with.
+
+
+Adding it is super simple - just add `viewTransition: true` to your `navigate()` call:
+
+```tsx {10}
+const modalRoute = createRoute({
+  getParentRoute: () => indexRoute,
+  path: "/modal",
+  component: function Modal() {
+    const navigate = modalRoute.useNavigate();
+
+    return (
+      <Sheet
+        open={true}
+        onOpenChange={() => navigate({ to: "/", viewTransition: true })}
+      >
+        <SheetContent>{/* ... */}</SheetContent>
+      </Sheet>
+    );
+  },
+});
+```
+
+You can also add the `viewTransition` prop to `<Link />` components. Here's the result:
+
+<Blog0003Step2 client:load />
+
+Much better, right? But it's still not quite there - the closing animation looks different from the opening one. The fade-out effect works okay for the overlay, but doesn't look great with `SheetContent`. I dug around and found that you can customize how each element animates by defining custom transitions and specifying a `view-transition-name`.
+
+```css title="index.css"
+::view-transition-old(app-sheet-transition) {
+  @apply animate-out duration-300 slide-out-to-right;
+}
+```
+
+I defined a custom view transition for old elements (like our sheet that we're animating out). I just copied the relevant animation classes from the `SheetContent` component definition.
+
+```tsx {12}
+const modalRoute = createRoute({
+  getParentRoute: () => indexRoute,
+  path: "/modal",
+  component: function Modal() {
+    const navigate = modalRoute.useNavigate();
+
+    return (
+      <Sheet
+        open={true}
+        onOpenChange={() => navigate({ to: "/", viewTransition: true })}
+      >
+        <SheetContent className="[view-transition-name:app-sheet-transition]">
+          {/* ... */}
+        </SheetContent>
+      </Sheet>
+    );
+  },
+});
+```
+
+Then I specified that `SheetContent` should use our custom transition.
+
+<Blog0003Step3 client:load />
+
+Even better! You might notice that sometimes after the slide-out animation finishes, the original state flickers for a split second. Here's how to fix that:
+
+```css title="index.css"
+::view-transition-old(app-sheet-transition) {
+  @apply animate-out duration-300 slide-out-to-right; /* [!code --] */
+  @apply animate-out duration-300 slide-out-to-right fill-mode-both; /* [!code ++] */
+}
+```
+
+This sets [`animation-fill-mode`](https://developer.mozilla.org/en-US/docs/Web/CSS/animation-fill-mode) to `both`, which ensures:
+
+> The target will retain the computed values set by the last keyframe encountered during execution
+
+This fixes the flickering at the end of the animation. Here's the final result:
+
+<Blog0003Step4 client:load />
+
+You can view the fully working example [here](https://tanstack-router-animated-modals.klapacz.workers.dev/) or check out the [example repo](https://github.com/klapacz/tanstack-router-animated-modals). I've kept the commit history clean so you can follow each step easily.
+
+If you found this helpful, please leave a reaction below - it means a lot! If you run into issues or have suggestions, drop a comment and I'll be happy to help. Happy coding!

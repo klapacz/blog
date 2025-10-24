@@ -8,6 +8,8 @@ import { transformerNotationDiff } from "@shikijs/transformers";
 import theme from "shiki/themes/github-light-default.mjs";
 import { visit } from "unist-util-visit";
 
+import react from "@astrojs/react";
+
 /** @type {import('rehype-pretty-code').Options} */
 const rehypePrettyCodeOptions = {
   theme: theme,
@@ -31,7 +33,7 @@ const plugin = () => (tree) => {
 // https://astro.build/config
 export default defineConfig({
   site: "https://klapacz.dev",
-  integrations: [mdx(), sitemap()],
+  integrations: [mdx(), sitemap(), react()],
   vite: {
     plugins: [tailwindcss()],
   },
