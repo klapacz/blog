@@ -38,6 +38,9 @@ export default defineConfig({
     astroD2({
       pad: 40,
       sketch: true,
+      theme: {
+        dark: false,
+      },
       experimental: {
         useD2js: true,
       },
