@@ -5,6 +5,10 @@ dist/
 
 # dependencies
 node_modules/
+.pnpm-store/
+
+# generated diagram assets
+public/d2/
 
 # logs
 npm-debug.log*

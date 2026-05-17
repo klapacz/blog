@@ -1,6 +1,7 @@
 // @ts-check
 import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
+import astroD2 from "astro-d2";
 import tailwindcss from "@tailwindcss/vite";
 import rehypePrettyCode from "rehype-pretty-code";
 import sitemap from "@astrojs/sitemap";
@@ -33,7 +34,18 @@ const plugin = () => (tree) => {
 // https://astro.build/config
 export default defineConfig({
   site: "https://klapacz.dev",
-  integrations: [mdx(), sitemap(), react()],
+  integrations: [
+    astroD2({
+      pad: 40,
+      sketch: true,
+      experimental: {
+        useD2js: true,
+      },
+    }),
+    mdx(),
+    sitemap(),
+    react(),
+  ],
   vite: {
     plugins: [tailwindcss()],
   },
